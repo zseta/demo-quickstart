@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
 
@@ -11,9 +12,10 @@ use tracing::{debug, info};
 
 use crate::db::ddl::DDL;
 
-pub async fn builder(migrate: bool) -> Result<Session> {
-    let database_url = env::var("DATABASE_URL")?;
-    let hostnames: Vec<String> = database_url.split(',').map(String::from).collect();
+pub async fn builder(migrate: bool, db_config: HashMap<&str, String>) -> Result<Session> {
+    let hostnames: Vec<String> = (db_config.get("host").unwrap_or(&"".to_string()).to_owned() + ":9042").split(',').map(String::from).collect();
+    let user= db_config.get("user").map(|s| s.as_str()).unwrap_or("scylla");
+    let passwd= db_config.get("user").map(|s| s.as_str()).unwrap_or("scylla");
 
     let consistency = match env::var("CL")
         .unwrap_or_default()
@@ -31,7 +33,7 @@ pub async fn builder(migrate: bool) -> Result<Session> {
         _ => Consistency::LocalQuorum,
     };
 
-    info!("Connecting to ScyllaDB at: {}  CL: {}", database_url, consistency);
+    info!("Connecting to ScyllaDB at: {}  CL: {}", hostnames[0], consistency);
 
     let strategy = ExponentialBackoff::from_millis(500).max_delay(Duration::from_secs(20));
 
@@ -54,6 +56,7 @@ pub async fn builder(migrate: bool) -> Result<Session> {
 
         SessionBuilder::new()
             .known_nodes(&hostnames)
+            .user(user, passwd)
             .default_execution_profile_handle(handle)
             .build()
             .await
