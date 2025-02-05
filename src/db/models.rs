@@ -1,19 +1,10 @@
 use rocket::serde::Serialize;
-use scylla::frame::value::CqlTimestamp;
 use scylla::FromRow;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, FromRow)]
-pub struct Metric {
-    pub node_id: String,
-    pub timestamp: CqlTimestamp,
-    pub latency_read_max: i64,
-    pub latency_write_max: i64,
-    pub reads_total: i64,
-    pub writes_total: i64,
-}
 
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 pub struct RateMetric {
     pub node_id: String,
     pub timestamp: i64,
